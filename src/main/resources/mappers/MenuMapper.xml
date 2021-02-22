@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.MenuMapper">
+    <select id="getFuzzyMenu" resultType="com.ll.admin.entity.Menu">
+        select m.menuid,m.parentid,m.menuname,m.icon,m.url,m.permission,m.sort,m.type,m.createtime,m.updatetime
+        from menu m
+        <where>
+            <if test="queryName != null and queryName != ''">
+                AND m.menuname like CONCAT('%', #{queryName}, '%')
+            </if>
+            <if test="queryType != null and queryType != ''">
+                AND m.type = #{queryType}
+            </if>
+        </where>
+        order by m.sort
+    </select>
+
+    <update id="update">
+        update menu m
+        <set>
+            <if test="parentId != null">
+                parentid = #{parentId},
+            </if>
+            <if test="menuName != null">
+                `menuname` = #{menuName},
+            </if>
+            <if test="icon != null">
+                `icon` = #{icon},
+            </if>
+            <if test="url != null">
+                url = #{url},
+            </if>
+            <if test="permission != null">
+                permission = #{permission},
+            </if>
+            <if test="sort != null">
+                sort = #{sort},
+            </if>
+            <if test="type != null">
+                type = #{type},
+            </if>
+            updatetime = #{updateTime}
+        </set>
+        where m.menuid = #{menuId}
+    </update>
+
+    <select id="listByUserId" resultType="com.ll.admin.dto.MenuIndexDto">
+        SELECT DISTINCT m.menuid as id,m.parentid,m.menuname as title,m.icon,m.url as href,m.type,m.permission,m.sort
+        FROM role_user ru
+        INNER JOIN role_menu rm ON rm.roleid = ru.roleid
+        LEFT JOIN menu m ON rm.menuid = m.menuid
+        <where>
+            <if test="userId != null">
+                ru.userid = #{userId}
+            </if>
+        </where>
+        ORDER BY ifnull(m.sort,0)
+    </select>
+
+</mapper>

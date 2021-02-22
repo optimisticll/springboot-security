@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.TaskMapper">
+    <sql id="selectTaskVo">
+        select j.taskid,j.jobname,j.description,j.cronexpression,j.beanclass,j.jobstatus,j.jobgroup,j.createuser,j.createtime,
+        j.updateuser,j.updatetime
+        from task j
+    </sql>
+    <select id="getFuzzyTaskByPage" resultType="com.ll.admin.entity.Task">
+        <include refid="selectTaskVo"/>
+        <where>
+            <if test="queryName != null and queryName != ''">
+                AND j.jobname like CONCAT('%', #{queryName}, '%')
+            </if>
+            <if test="queryStatus!= null">
+                AND j.jobstatus = #{queryStatus}
+            </if>
+        </where>
+        order by j.taskid
+    </select>
+
+    <update id="updateTask" parameterType="com.ll.admin.entity.Task">
+        update task
+        <set>
+            <if test="jobstatus !=null">
+                jobstatus = #{jobstatus},
+            </if>
+            updatetime = #{updatetime}
+        </set>
+        where taskid = #{taskid}
+    </update>
+
+    <select id="checkJobNameUnique" parameterType="String" resultType="com.ll.admin.entity.Task">
+        <include refid="selectTaskVo"/>
+        where j.jobname= #{jobname} limit 1
+    </select>
+
+    <delete id="deleteTaskbyid" parameterType="Integer">
+        delete from task where taskid in
+        <foreach collection="array" item="taskid" open="("  separator="," close=")">
+           #{taskid}
+        </foreach>
+    </delete>
+</mapper>

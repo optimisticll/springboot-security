@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.UserJobMapper">
+    <insert id="batchUserJob">
+        insert into user_job(userid, jobid) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{item.userId},#{item.jobId})
+        </foreach>
+    </insert>
+
+    <delete id="deleteUserJobByUserId" parameterType="Integer">
+		delete from user_job where userid=#{id}
+	</delete>
+</mapper>

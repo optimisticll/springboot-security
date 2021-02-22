@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.RoleMapper">
+    <sql id="selectRoleContactVo">
+        select distinct r.roleid,r.rolename,r.datascope,r.description,r.createtime,r.updatetime
+        from role r
+	        left join role_user ru on ru.roleid = r.roleid
+	        left join user u on u.userid = ru.userid
+	        left join dept d on u.deptid = d.deptid
+    </sql>
+
+    <select id="getFuzzyRolesByPage" resultType="com.ll.admin.entity.Role">
+        <include refid="selectRoleContactVo"/>
+        <where>
+            <if test="roleName != null and roleName != ''">
+                r.rolename like CONCAT('%', #{roleName}, '%')
+            </if>
+            <!-- 数据范围过滤 -->
+            ${params.dataScope}
+        </where>
+    </select>
+
+    <insert id="saveRole" parameterType="com.ll.admin.entity.Role" flushCache="true" useGeneratedKeys="true" keyProperty="roleId">
+		insert into role(rolename, description, createtime, updatetime)
+		values
+		(#{roleName}, #{description}, now(), now())
+	</insert>
+
+    <update id="update">
+        update role r
+        <set>
+            <if test="roleName != null">
+                `rolename` = #{roleName},
+            </if>
+            <if test="dataScope != null">
+                datascope = #{dataScope},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            updatetime = #{updatetime}
+        </set>
+        where r.roleid = #{roleId}
+    </update>
+
+
+</mapper>

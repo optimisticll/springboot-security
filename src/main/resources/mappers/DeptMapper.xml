@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.DeptMapper">
+    <sql id="selectDeptVo">
+        select d.deptid,d.parentid,d.deptname,d.sort,d.status,d.createtime,d.updatetime
+        from dept d
+    </sql>
+
+    <select id="getFuzzyDept" resultType="com.ll.admin.entity.Dept">
+        <include refid="selectDeptVo"/>
+        <where>
+            <if test="deptName != null and deptName != ''">
+                AND d.deptname like CONCAT('%', #{deptName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND d.status = #{status}
+            </if>
+            <!-- 数据范围过滤 -->
+            ${params.dataScope}
+        </where>
+        order by d.sort
+    </select>
+
+
+    <select id="buildAll" resultType="com.ll.admin.dto.DeptDto">
+        select d.deptid as id,d.parentid,d.deptname as title
+        from dept d
+        <where>
+            <!-- 数据范围过滤 -->
+            ${params.dataScope}
+        </where>
+    </select>
+
+
+    <select id="selectDeptById" parameterType="integer" resultType="com.ll.admin.entity.Dept">
+		select d.deptid, d.parentid, d.ancestors, d.deptname, d.status,
+			(select s.deptname from dept s where s.deptid = d.parentid) parentname
+		from dept d
+		where d.deptid = #{deptId}
+	</select>
+
+    <select id="checkDeptNameUnique" resultType="com.ll.admin.entity.Dept">
+        <include refid="selectDeptVo"/>
+        where deptname= #{deptName} and parent_id = #{parentId} limit 1
+    </select>
+
+    <select id="selectChildrenDeptById" parameterType="integer" resultType="com.ll.admin.entity.Dept">
+		select * from dept where find_in_set(#{id}, ancestors)
+	</select>
+
+    <select id="selectRoleDeptTree" parameterType="integer" resultType="com.ll.admin.dto.DeptDto">
+		select d.deptid as id,d.parentid,d.deptname as title
+		from dept d
+			left join role_dept rd on d.deptid = rd.deptid
+		where rd.roleid = #{id}
+		order by d.parentid
+	</select>
+
+    <update id="updateDeptChildren" parameterType="java.util.List">
+        update my_dept set ancestors =
+        <foreach collection="depts" item="item" index="index"
+                 separator=" " open="case deptid" close="end">
+            when #{item.id} then #{item.ancestors}
+        </foreach>
+        where id in
+        <foreach collection="depts" item="item" index="index"
+                 separator="," open="(" close=")">
+            #{item.id}
+        </foreach>
+    </update>
+
+    <update id="updateDept">
+        update my_dept d
+        <set>
+            <if test="parentId != null and parentId != 0">parent_id = #{parentId},</if>
+            <if test="deptName != null and deptName != ''"> `dept_name` = #{deptName},</if>
+            <if test="ancestors != null and ancestors != ''">ancestors = #{ancestors},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = #{updateTime}
+        </set>
+        where d.dept_id = #{deptId}
+    </update>
+
+    <update id="updateDeptStatus" parameterType="com.ll.admin.entity.Dept">
+        update my_dept
+        <set>
+            <if test="status != null and status != ''">status = #{status},</if>
+            update_time = #{updateTime}
+        </set>
+        where deptid in (${ancestors})
+    </update>
+
+    <select id="selectNormalChildrenDeptById" parameterType="integer" resultType="int">
+		select count(*) from dept where status = 1 and find_in_set(#{deptid}, ancestors)
+	</select>
+
+    <select id="selectDeptCount" parameterType="com.ll.admin.entity.Dept" resultType="int">
+        select count(1) from dept
+        <where>
+            <if test="deptId != null and deptId != 0"> and deptid = #{deptId} </if>
+            <if test="parentId != null and parentId != 0"> and parentid = #{parentId} </if>
+        </where>
+    </select>
+
+    <select id="checkDeptExistUser" parameterType="integer" resultType="int">
+		select count(1) from my_user where deptid = #{deptId}
+	</select>
+
+    <delete id="deleteDeptById" parameterType="integer">
+		delete from dept where deptid =#{deptId}
+	</delete>
+
+</mapper>

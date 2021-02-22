@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.RoleUserMapper">
+    <update id="updateMyRoleUser">
+        update role_user ru
+        <set>
+            <if test="roleId != null">
+                roleid = #{roleId},
+            </if>
+        </set>
+        where ru.userid = #{userId}
+    </update>
+
+</mapper>

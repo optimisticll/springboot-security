@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.DictMapper">
+
+
+    <sql id="selectDictVo">
+        select di.dictid,di.dictname,di.description,di.sort,di.createby,di.updateby,di.createtime,di.updatetime
+        from dict di
+    </sql>
+
+    <select id="getFuzzyDictByPage" resultType="com.ll.admin.entity.Dict">
+        <include refid="selectDictVo"/>
+        <where>
+            <if test="dictName != null and dictName != ''">
+                AND di.dictname like CONCAT('%', #{dictName}, '%')
+            </if>
+        </where>
+
+    </select>
+
+    <select id="getDictByName" parameterType="string" resultType="com.ll.admin.entity.Dict">
+        <include refid="selectDictVo"/>
+        where di.dictname = #{dictName}
+    </select>
+
+
+    <update id="updateDict" parameterType="com.ll.admin.entity.Dict">
+        update dict
+        <set>
+            <if test="dictName != null and dictName != ''">dictname = #{dictName},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="sort != null and sort != ''">sort = #{sort},</if>
+            updatetime = #{updateTime}
+        </set>
+        where dictid = #{dictId}
+    </update>
+
+
+    <delete id="deleteDictByIds" parameterType="integer">
+        delete from dict where dictid in
+        <foreach collection="array" item="dictId" open="(" separator="," close=")">
+            #{dictId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <header th:replace="header::html"></header>
+</head>
+<body>
+<form class="layui-form" action="">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="main-container">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <span style="color: red">*</span>定时任务名</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="jobname" th:value="${MyTask.jobname}" lay-verify="required" autocomplete="off" placeholder="请输入定时任务名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <span style="color: red">*</span>描述</label>
+                    <div class="layui-input-block">
+                        <input type="text"  name="description"th:value="${MyTask.description}" lay-verify="required" autocomplete="off" placeholder="请输入任务描述" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <span style="color: red">*</span>cron表达式</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="cronexpression" th:value="${MyTask.cronexpression}" lay-verify="required" autocomplete="off" placeholder="请输入定时任务表达式" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <span style="color: red">*</span>定时任务类</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="beanclass" th:value="${MyTask.beanclass}" lay-verify="required" autocomplete="off" placeholder="请输入定时任务类" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">定时任务状态</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="jobstatus" value="1" title="正常" checked>
+                        <input type="radio" name="jobstatus" value="0" title="停用">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">
+                        <span style="color: red">*</span>定时任务分组</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="jobgroup" th:value="${MyTask.jobgroup}" lay-verify="required" autocomplete="off" placeholder="请输入任务分组" class="layui-input">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="layui-btn layui-btn-normal layui-btn-sm" lay-submit="" lay-filter="job-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<script>
+    layui.use(['form','jquery'],function(){
+        let form = layui.form;
+        let $ = layui.jquery;
+
+        form.on('submit(job-save)', function(data){
+            $.ajax({
+                url:'/api/quartz',
+                data:JSON.stringify(data.field),
+                dataType:'json',
+                contentType:'application/json',
+                type:'post',
+                success:function(result){
+                    if(result.success){
+                        layer.msg(result.msg,{icon:1,time:1000},function(){
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));//关闭当前页
+                            parent.layui.table.reload("job-table");
+                        });
+                    }else{
+                        layer.msg(result.msg,{icon:2,time:1000});
+                    }
+                }
+            })
+            return false;
+        });
+        form.verify({
+            sort:  [
+                /^[1-9]\d*$/
+                ,'只能是整数哦'
+            ],
+        })
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ll.admin.mapper.UserMapper">
+
+    <select id="getFuzzyUserByPage" resultType="com.ll.admin.entity.User">
+        SELECT u.userId,u.deptId,u.username,u.password,u.nickname,u.phone,u.email,u.status,u.createtime,u.updatetime
+        FROM user u
+        left join dept d on u.deptId = d.deptId
+        <where>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname like CONCAT('%', #{nickname}, '%')
+            </if>
+            <if test="username != null and username != ''">
+                AND u.username like CONCAT('%', #{username}, '%')
+            </if>
+            <if test="deptId != null and deptId != ''">
+                AND (u.deptId = #{deptId} OR u.deptId IN ( SELECT e.deptId FROM dept e WHERE FIND_IN_SET(#{deptId},ancestors) ))
+            </if>
+            <!-- 数据范围过滤 -->
+            ${params.dataScope}
+        </where>
+        ORDER BY u.userId
+    </select>
+
+    <select id="checkPhoneUnique" parameterType="String" resultType="com.ll.admin.entity.User">
+		select u.userId,u.phone from user u where u.phone = #{phone} limit 1
+	</select>
+
+    <select id="checkUsernameUnique" parameterType="String" resultType="com.ll.admin.entity.User">
+		select u.userId,u.username from user u where u.username = #{username} limit 1
+	</select>
+
+    <update id="updateUser">
+        update user u
+        <set>
+            <if test="deptId != null">
+                deptId = #{deptId},
+            </if>
+            <if test="username != null">
+                username = #{username},
+            </if>
+            <if test="nickname != null">
+                nickname = #{nickname},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="email != null">
+                email = #{email},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            updatetime = #{updatetime}
+        </set>
+        where u.userId = #{userId}
+    </update>
+</mapper>

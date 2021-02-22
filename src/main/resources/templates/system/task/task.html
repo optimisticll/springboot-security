@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" content="text/html;charset=utf-8">
+    <title></title>
+    <header th:replace="header::html"></header>
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">定时任务名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="name" placeholder="请输入定时任务名称" class="layui-input">
+                </div>
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-inline">
+                    <select name="status">
+                        <option value=""></option>
+                        <option value="1">正常</option>
+                        <option value="0">禁用</option>
+                    </select>
+                </div>
+                <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="job-query">
+                    <i class="layui-icon layui-icon-search"></i>
+                    查询
+                </button>
+                <button type="reset" class="pear-btn pear-btn-md">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                    重置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="job-table" lay-filter="job-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="job-toolbar">
+    <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新增
+    </button>
+    <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
+        <i class="layui-icon layui-icon-delete"></i>
+        删除
+    </button>
+</script>
+
+<script type="text/html" id="job-bar">
+    <button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-play"></i></button>
+    <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>
+</script>
+
+<script type="text/html" id="job-status">
+    <input type="checkbox"  name="status"  value="{{d.taskid}}" lay-skin="switch" lay-text="启用|禁用" mid="{{d.taskid}}"  lay-filter="job-status" {{ d.jobstatus == '1' ? 'checked' : '' }}>
+</script>
+
+
+<script type="text/html" id="job-time">
+    {{layui.util.toDateString(d.createtime, 'yyyy-MM-dd HH:mm:ss')}}
+</script>
+
+<script>
+    layui.use(['table','form','jquery'],function () {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+        let MODULE_PATH = "operate/";
+        let cols = [
+            [
+                {type:'checkbox'},
+                {title: '任务名称', field: 'jobname', align:'center', width:100},
+                {field: 'description', title: '任务描述',align:'center',},
+                {title: '任务分组', field: 'jobgroup', align:'center', width:100},
+                {title: '任务类', field: 'beanclass', align:'center', width:100},
+                {title: 'cron表达式', field: 'cronexpression', align:'center', width:100},
+                {field: 'status', title: '是否可用',templet:'#job-status'},
+                {title: '创建时间', field: 'createtime', align:'center',templet:'#job-time'},
+                {field: 'updatetime', title: '更新时间', align:'center',templet:'#job-time'},
+                {title: '操作', toolbar: '#job-bar', align:'center', width:130}
+            ]
+        ]
+
+        var tableIns =table.render({
+            elem: '#job-table',
+            url: '/api/quartz',
+            page: true ,
+            cols: cols ,
+            skin: 'line',
+            toolbar: '#job-toolbar',
+            defaultToolbar: [{
+                layEvent: 'refresh',
+                icon: 'layui-icon-refresh',
+            }, 'filter', 'print', 'exports']
+        });
+
+        table.on('tool(job-table)', function(obj){
+            if(obj.event === 'remove'){
+                window.remove(obj);
+            } else if(obj.event === 'edit'){
+                window .edit(obj);
+            }
+        });
+
+        table.on('toolbar(job-table)', function(obj){
+            if(obj.event === 'add'){
+                window.add();
+            } else if(obj.event === 'refresh'){
+                window.refresh();
+            } else if(obj.event === 'batchRemove'){
+                window.batchRemove(obj);
+            }
+        });
+        form.on('switch(job-status)', function(obj) {
+            layer.confirm(obj.elem.checked ? '确定要启用该定时任务吗' : '确定要停用该定时任务吗', {icon: 3, title: '提示'}, function (index) {
+                layer.close(index);
+                var status = obj.elem.checked ? 1 : 0;
+                var data ={
+                    taskid: obj.value,
+                    jobstatus: status
+                }
+                let loading = layer.load();
+                $.ajax({
+                    url:'/api/quartz/changeStatus',
+                    data:JSON.stringify(data),
+                    dataType:'json',
+                    contentType:'application/json',
+                    type:'put',
+                    success:function(result){
+                        layer.close(loading);
+                        if(result.success){
+                            layer.msg(result.msg,{icon:1,time:1000},function(){
+                                obj.del();
+                            });
+                        }else{
+                            layer.msg(result.msg,{icon:2,time:1000});
+                        }
+                    }
+                })
+            });
+        });
+        form.on('submit(job-query)', function(data){
+            var formData = data.field;
+            var name = formData.name;
+            var status = formData.status;
+            tableIns.reload({
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+                , where: {//这里传参  向后台
+                    queryName: name,
+                    queryStatus: status
+                    //可传多个参数到后台...  ，分隔
+                }
+                , url: '/api/quartz'//后台做模糊搜索接口路径
+                , method: 'get'
+            });
+            return false;
+        });
+
+
+        window.add = function(){
+            layer.open({
+                type: 2,
+                title: '新增',
+                shade: 0.1,
+                area: ['500px', '500px'],
+                content:  '/api/quartz/add'
+            });
+        }
+
+        window.edit = function(obj){
+            layer.confirm('确定立即执行该任务吗？',{icon: 3,title:'提示'},function(index){
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: "/api/quartz/edit",
+                    dataType: 'json',
+                    data:{taskid:obj.data['taskid']},
+                    type:'post',
+                    success:function (result) {
+                        layer.close(loading);
+                        if(result.success){
+                            layer.msg(result.msg,{icon:1,time:1000})
+                        }else{
+                            layer.msg(result,msg,{icon:2,time:1000})
+                        }
+                    }
+                })
+            });
+        }
+
+        window.remove = function(obj){
+            layer.confirm('确定要删除该任务吗？', {icon: 3, title:'提示'}, function(index){
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: "/api/quartz?ids="+obj.data['taskid'],
+                    dataType:'json',
+                    type:'delete',
+                    success:function(result){
+                        layer.close(loading);
+                        if(result.success){
+                            layer.msg(result.msg,{icon:1,time:1000},function(){
+                                obj.del();
+                            });
+                        }else{
+                            layer.msg(result.msg,{icon:2,time:1000});
+                        }
+                    }
+                })
+            });
+        }
+
+        window.batchRemove = function(obj){
+            let data = table.checkStatus(obj.config.id).data;
+            if(data.length === 0){
+                layer.msg("未选中数据",{icon:3,time:1000});
+                return false;
+            }
+            let ids = "";
+            for(let i = 0;i<data.length;i++){
+                ids += data[i].taskid+",";
+            }
+            ids = ids.substr(0,ids.length-1);
+            layer.confirm('确定删除这些任务吗？', {icon: 3, title:'提示'}, function(index){
+                layer.close(index);
+                let loading = layer.load();
+                $.ajax({
+                    url: "/api/quartz?ids="+ids,
+                    dataType:'json',
+                    type:'delete',
+                    success:function(result){
+                        layer.close(loading);
+                        if(result.success){
+                            layer.msg(result.msg,{icon:1,time:1000},function(){
+                                table.reload('job-table');
+                            });
+                        }else{
+                            layer.msg(result.msg,{icon:2,time:1000});
+                        }
+                    }
+                })
+            });
+        }
+
+        window.refresh = function(param){
+            table.reload('job-table');
+        }
+    })
+</script>
+</body>
+</html>
